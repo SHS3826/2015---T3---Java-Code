@@ -17,7 +17,7 @@ import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 public class Robot extends IterativeRobot {
 	RobotDrive robotDrive;
 	Joystick controlStick;
-	int autoLoopIncrementer;
+	int autoLoopCounter;
     final int frontLeftChannel	= 1;
     final int rearLeftChannel	= 0;
     final int frontRightChannel	= 2;
