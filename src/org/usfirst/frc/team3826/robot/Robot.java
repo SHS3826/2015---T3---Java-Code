@@ -18,6 +18,8 @@ public class Robot extends IterativeRobot {
 	RobotDrive robotDrive;
 	Joystick controlStick;
 	int autoLoopCounter;
+	int saitekMultiplier, saitekXValue, saitekYValue, saitekThrottleValue;
+	boolean saitekTriggerPulled;
     final int frontLeftChannel	= 1;
     final int rearLeftChannel	= 0;
     final int frontRightChannel	= 2;
@@ -72,7 +74,11 @@ public class Robot extends IterativeRobot {
         	
         	// Use the joystick X axis for lateral movement, Y axis for forward movement, and Z axis for rotation.
         	// This sample does not use field-oriented drive, so the gyro input is set to zero.
-            robotDrive.mecanumDrive_Cartesian(controlStick.getX(), controlStick.getY(), controlStick.getThrottle(), 0);           
+        	if(controlStick.getRawButton(0)) {
+        		robotDrive.mecanumDrive_Cartesian(controlStick.getX(), controlStick.getY(), controlStick.getThrottle(), 0); 
+        	} else {
+        		robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.25, controlStick.getY())*.25, controlStick.getThrottle())*.25, 0); 
+        	}
             Timer.delay(0.005);	// wait 5ms to avoid hogging CPU cycles
         }
     }
