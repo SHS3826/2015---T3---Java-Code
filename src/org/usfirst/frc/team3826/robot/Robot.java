@@ -17,7 +17,7 @@ import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 public class Robot extends IterativeRobot {
 	RobotDrive robotDrive;
 	Joystick controlStick;
-	int autoLoopCounter;
+	int autoLoopIncrementer;
 	int saitekMultiplier, saitekXValue, saitekYValue, saitekThrottleValue;
 	boolean saitekTriggerPulled;
     final int frontLeftChannel	= 1;
@@ -74,6 +74,7 @@ public class Robot extends IterativeRobot {
         	
         	// Use the joystick X axis for lateral movement, Y axis for forward movement, and Z axis for rotation.
         	// This sample does not use field-oriented drive, so the gyro input is set to zero.
+        	// If the trigger on the Saitek controller is pulled, the movement will be much slower.
         	if(controlStick.getRawButton(0)) {
         		robotDrive.mecanumDrive_Cartesian(controlStick.getX(), controlStick.getY(), controlStick.getThrottle(), 0); 
         	} else {
