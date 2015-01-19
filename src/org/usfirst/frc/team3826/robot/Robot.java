@@ -78,12 +78,25 @@ public class Robot extends IterativeRobot {
         	// Use the joystick X axis for lateral movement, Y axis for forward movement, and Z axis for rotation.
         	// This sample does not use field-oriented drive, so the gyro input is set to zero.
         	// If the trigger on the Saitek controller is pulled, the movement will be much slower.
-        	if (!limitSwitch.get()) {
-        	if(controlStick.getRawButton(0)) {
+        	
+        	/* Basic Drive Update Code:
+        	robotDrive.mecanumDrive_Cartesian(controlStick.getX(), controlStick.getY(), controlStick.getThrottle(), 0); 
+        	*/
+        	
+        	/* Limit Switch Code (If the Limit Switch is activated, the motors will stop):
+        	if (limitSwitch.get()) {
+        			robotDrive.mecanumDrive_Cartesian(controlStick.getX(), controlStick.getY(), controlStick.getThrottle(), 0); 
+        	} else {
+    			robotDrive.mecanumDrive_Cartesian(0, 0, 0, 0);         		
+        	}
+        	*/
+        	
+        	// This code uses the trigger on the Saitek Controller to speed up drive speed from 25%.
+        	
+        	if(controlStick.getRawButton(1)) {
         		robotDrive.mecanumDrive_Cartesian(controlStick.getX(), controlStick.getY(), controlStick.getThrottle(), 0); 
         	} else {
-        		robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.25, controlStick.getY()*.25, controlStick.getThrottle()*.25, 0); 
-        	}
+        		robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.25, controlStick.getY()*.25, controlStick.getThrottle()*.25, 0);      		
         	}
             Timer.delay(0.005);	// wait 5ms to avoid hogging CPU cycles
         }
