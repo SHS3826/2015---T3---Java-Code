@@ -6,6 +6,7 @@ import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.RobotDrive.MotorType;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
+import edu.wpi.first.wpilibj.*;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -17,6 +18,7 @@ import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 public class Robot extends IterativeRobot {
 	RobotDrive robotDrive;
 	Joystick controlStick;
+	DigitalInput limitSwitch = new DigitalInput(0);
 	int autoLoopIncrementer;
 	int saitekMultiplier, saitekXValue, saitekYValue, saitekThrottleValue;
 	boolean saitekTriggerPulled;
@@ -25,6 +27,7 @@ public class Robot extends IterativeRobot {
     final int frontRightChannel	= 2;
     final int rearRightChannel	= 3;
     final int joystickChannel	= 0;
+    boolean [] limitswitches = {};
 	
     /**
      * This function is run when the robot is first started up and should be
@@ -78,8 +81,9 @@ public class Robot extends IterativeRobot {
         	if(controlStick.getRawButton(0)) {
         		robotDrive.mecanumDrive_Cartesian(controlStick.getX(), controlStick.getY(), controlStick.getThrottle(), 0); 
         	} else {
-        		robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.25, controlStick.getY())*.25, controlStick.getThrottle())*.25, 0); 
+        		robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.25, controlStick.getY()*.25, controlStick.getThrottle()*.25, 0); 
         	}
+        	limitSwitch.get();
             Timer.delay(0.005);	// wait 5ms to avoid hogging CPU cycles
         }
     }
