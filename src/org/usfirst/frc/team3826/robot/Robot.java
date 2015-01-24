@@ -1,5 +1,6 @@
 package org.usfirst.frc.team3826.robot;
 
+import java.lang.Math;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
@@ -102,11 +103,11 @@ public class Robot extends IterativeRobot {
         	
         	//This code drives the robot in a (mostly) straight line. The trigger needs to be pressed to change the direction.
         	
-        	if (controlStick.getRawButton(1)) {
-        		robotDrive.mecanumDrive_Cartesian(0, 0, controlStick.getThrottle()*.3, 0);
+        	if (Math.abs(controlStick.getThrottle())>=.15) {
+        		robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.5, controlStick.getY()*.2, controlStick.getThrottle()*.3, 0);
         		lateralGyro.reset();
         	} else {
-            	robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.4, controlStick.getY()*.2, -(lateralGyro.getAngle())*.03, 0);
+            	robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.5, controlStick.getY()*.2, -(lateralGyro.getAngle())*.03, 0);
         	}
         	
         	// Test if console output can be sent to RIOLog window in Eclipse
