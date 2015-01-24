@@ -19,9 +19,11 @@ public class Robot extends IterativeRobot {
 	RobotDrive robotDrive;
 	Joystick controlStick;
 	DigitalInput limitSwitch = new DigitalInput(0);
+	Gyro lateralGyro = new Gyro(0);
 	int autoLoopIncrementer;
-	int saitekMultiplier, saitekXValue, saitekYValue, saitekThrottleValue;
+	int saitekMultiplier, saitekXValue, saitekYValue, saitekThrottleValue, gyroTotalChange;
 	boolean saitekTriggerPulled;
+	double currentHeading;
     final int frontLeftChannel	= 1;
     final int rearLeftChannel	= 0;
     final int frontRightChannel	= 2;
@@ -66,6 +68,8 @@ public class Robot extends IterativeRobot {
      * This function is called once each time the robot enters tele-operated mode
      */
     public void teleopInit(){
+    	lateralGyro.reset();
+    	currentHeading = 0;
     }
 
     /**
@@ -75,6 +79,7 @@ public class Robot extends IterativeRobot {
         //robotDrive.setSafetyEnabled(true);
         while (isOperatorControl() && isEnabled()) {
         	
+        	
         	// Use the joystick X axis for lateral movement, Y axis for forward movement, and Z axis for rotation.
         	// This sample does not use field-oriented drive, so the gyro input is set to zero.
         	// If the trigger on the Saitek controller is pulled, the movement will be much slower.
@@ -83,22 +88,32 @@ public class Robot extends IterativeRobot {
         	robotDrive.mecanumDrive_Cartesian(controlStick.getX(), controlStick.getY(), controlStick.getThrottle(), 0); 
         	*/
         	
-        	/* Limit Switch Code (If the Limit Switch is activated, the motors will stop):
-        	if (limitSwitch.get()) {
-        			robotDrive.mecanumDrive_Cartesian(controlStick.getX(), controlStick.getY(), controlStick.getThrottle(), 0); 
+ 			// Limit Switch Code (If the Limit Switch is activated, the motors will stop):
+        	
+        	/*
+        	
+			if (limitSwitch.get()) {        		
+        		robotDrive.mecanumDrive_Cartesian(Math.pow(controlStick.getX(),3), Math.pow(controlStick.getY(),3), Math.pow(controlStick.getThrottle(),3), lateralGyro.getAngle()); 
         	} else {
     			robotDrive.mecanumDrive_Cartesian(0, 0, 0, 0);         		
         	}
+        	
         	*/
         	
-        	// This code uses the trigger on the Saitek Controller to speed up drive speed from 25%.
+        	//This code drives the robot in a (mostly) straight line. The trigger needs to be pressed to change the direction.
         	
-        	if(controlStick.getRawButton(1)) {
-        		robotDrive.mecanumDrive_Cartesian(controlStick.getX(), controlStick.getY(), controlStick.getThrottle(), 0); 
+        	if (controlStick.getRawButton(1)) {
+        		robotDrive.mecanumDrive_Cartesian(0, 0, controlStick.getThrottle()*.3, 0);
+        		lateralGyro.reset();
         	} else {
-        		robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.25, controlStick.getY()*.25, controlStick.getThrottle()*.25, 0);      		
+            	robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.4, controlStick.getY()*.2, -(lateralGyro.getAngle())*.03, 0);
         	}
-            Timer.delay(0.005);	// wait 5ms to avoid hogging CPU cycles
+        	
+        	// Test if console output can be sent to RIOLog window in Eclipse
+        	
+			System.out.println(lateralGyro.getAngle());
+          	
+            Timer.delay(0.04);	// wait 40ms to avoid hogging CPU cycles
         }
     }
     
