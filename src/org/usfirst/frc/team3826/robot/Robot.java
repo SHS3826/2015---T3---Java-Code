@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.RobotDrive.MotorType;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.*;
 
 /**
@@ -19,14 +20,17 @@ import edu.wpi.first.wpilibj.*;
 public class Robot extends IterativeRobot {
 	RobotDrive robotDrive;
 	Joystick controlStick;
-	DigitalInput limitSwitch = new DigitalInput(0);
+	DigitalInput rangeFinder = new DigitalInput(2);
 	Gyro lateralGyro = new Gyro(0);
-	int autoLoopIncrementer;
-	int saitekMultiplier, saitekXValue, saitekYValue, saitekThrottleValue, gyroTotalChange;
+	AnalogInput distDet = new AnalogInput(1);
+	int autoLoopIncrementer, heading;
+	Victor encodedMotor = new Victor(4);
+	Encoder encoderA = new Encoder(0, 1, true);
+	int saitekMultiplier, saitekXValue, saitekYValue, saitekThrottleValue, gyroTotalChange, time;
 	boolean saitekTriggerPulled;
-	double currentHeading;
-    final int frontLeftChannel	= 1;
-    final int rearLeftChannel	= 0;
+	double currentHeading, dist, motorLevel;
+    final int frontLeftChannel	= 0;
+    final int rearLeftChannel	= 1;
     final int frontRightChannel	= 2;
     final int rearRightChannel	= 3;
     final int joystickChannel	= 0;
@@ -43,6 +47,7 @@ public class Robot extends IterativeRobot {
     	robotDrive.setExpiration(10);
     	robotDrive.setInvertedMotor(MotorType.kFrontRight, true);	// invert the left side motors
     	robotDrive.setInvertedMotor(MotorType.kRearRight, true);	// you may need to change or remove this to match your robot
+    	//SmartDashboard.putString("AutoMode", "None");
     }
     
     /**
@@ -71,6 +76,9 @@ public class Robot extends IterativeRobot {
     public void teleopInit(){
     	lateralGyro.reset();
     	currentHeading = 0;
+    	encoderA.reset();
+    	heading = 0;
+    	motorLevel = 0;
     }
 
     /**
@@ -101,20 +109,98 @@ public class Robot extends IterativeRobot {
         	
         	*/
         	
-        	//This code drives the robot in a (mostly) straight line. The trigger needs to be pressed to change the direction.
+        	// This code is the Straight-Drive Code, but with axis changes for the Xbox Controller.
         	
-        	if (Math.abs(controlStick.getThrottle())>=.15) {
-        		robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.5, controlStick.getY()*.2, controlStick.getThrottle()*.3, 0);
-        		lateralGyro.reset();
+        	/*
+        	
+        	if (controlStick.getRawButton(1)) {
+        		if (Math.abs(controlStick.getX())>=.15) {
+        			robotDrive.mecanumDrive_Cartesian(controlStick.getRawAxis(4), controlStick.getY(), controlStick.getX(), 0);
+        			lateralGyro.reset();
+        		} else {
+        			robotDrive.mecanumDrive_Cartesian(controlStick.getRawAxis(4), controlStick.getY(), -(lateralGyro.getAngle())*.03, 0);
+        		}
         	} else {
-            	robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.5, controlStick.getY()*.2, -(lateralGyro.getAngle())*.03, 0);
+        		if (Math.abs(controlStick.getX())>=.15) {
+        			robotDrive.mecanumDrive_Cartesian(controlStick.getRawAxis(4)*.5, controlStick.getY()*.2, controlStick.getX()*.3, 0);
+        			lateralGyro.reset();
+        		} else {
+        			robotDrive.mecanumDrive_Cartesian(controlStick.getRawAxis(4)*.5, controlStick.getY()*.2, -(lateralGyro.getAngle())*.03, 0);
+        		}
         	}
         	
-        	// Test if console output can be sent to RIOLog window in Eclipse
+        	*/
         	
-			System.out.println(lateralGyro.getAngle());
+        	//This code drives the robot in a (mostly) straight line, as well as uses Multi-Speed Drive.
+        	
+        	       	
+        	if (controlStick.getRawButton(1)) {
+        		if (Math.abs(controlStick.getThrottle())>=.15) {
+        			robotDrive.mecanumDrive_Cartesian(controlStick.getX(), controlStick.getY(), controlStick.getThrottle(), 0);
+        			lateralGyro.reset();
+        		} else {
+        			robotDrive.mecanumDrive_Cartesian(controlStick.getX(), controlStick.getY(), -(heading)*.03, 0);
+        		}
+        	} else {
+        		if (Math.abs(controlStick.getThrottle())>=.15) {
+        			robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.5, controlStick.getY()*.2, controlStick.getThrottle()*.3, 0);
+        			lateralGyro.reset();
+        		} else {
+        			robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.5, controlStick.getY()*.2, -(heading)*.03, 0);
+        		}
+        	}
+        	
+        	
+        	
+        	encodedMotor.set(controlStick.getZ());
+        	if (controlStick.getRawButton(1)) {
+        		motorLevel = 1;
+        	} else if (controlStick.getRawButton(2)) {
+        		motorLevel = 0;
+        	} else if (controlStick.getRawButton(3)) {
+        		motorLevel = -1;
+        	} else if (controlStick.getRawButton(4)) {
+        		motorLevel = 5;
+        	}
+        	
+        	/*
+        	if (Math.abs(controlStick.getZ() < .1)) {
+        	if (encoderA.get()/497 < (motorLevel * 1.0)) {
+        		encodedMotor.set(encoderA.get()/497 - (motorLevel * 1.0));
+        	} else if (encoderA.get()/497 > (motorLevel * 1.0)) {
+        		encodedMotor.set(encoderA.get()/497 + (motorLevel * 1.0));
+        	} else {
+        		encodedMotor.set(0);
+        	}
+        	
+        	*/
+        	
+        	encodedMotor.set(4*(encoderA.get()/497.0 - (motorLevel * 1.0)));
+        	
+        	//}
+        	
+        	// This code implements FO-Drive.
+        	
+            //robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.5, controlStick.getY()*.2, controlStick.getThrottle()*.3, lateralGyro.getAngle());
+        	
+			//System.out.println(encoderA.get()/497.0 + " " + motorLevel);
+        	
+        	//if (Math.abs(lateralGyro.getAngle()) > .5) {
+        	//	heading+=lateralGyro.getAngle();
+        	//}
+        	heading = (int) lateralGyro.getAngle();
+        	SmartDashboard.putDouble("Raw", lateralGyro.getAngle());
+        	//lateralGyro.reset();
+			SmartDashboard.putNumber("Encoder Value", encoderA.get()/497.0);
+			SmartDashboard.putBoolean("Range Finder", rangeFinder.get());
+			SmartDashboard.putInt("Gyro", heading);
+			if (encoderA.get()/497<0) {
+				SmartDashboard.putBoolean("Motor", true);
+			} else {
+				SmartDashboard.putBoolean("Motor", false);
+			}
           	
-            Timer.delay(0.04);	// wait 40ms to avoid hogging CPU cycles
+            Timer.delay(.04);	// wait 40ms to avoid hogging CPU cycles
         }
     }
     
