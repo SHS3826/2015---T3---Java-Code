@@ -21,6 +21,8 @@ public class Robot extends IterativeRobot {
 	RobotDrive robotDrive;
 	Joystick controlStick;
 	DigitalInput rangeFinder = new DigitalInput(2);
+	Solenoid leftActuator = new Solenoid(0);
+	Solenoid rightActuator = new Solenoid(1);
 	Gyro lateralGyro = new Gyro(0);
 	AnalogInput distDet = new AnalogInput(1);
 	int autoLoopIncrementer, heading;
@@ -40,6 +42,7 @@ public class Robot extends IterativeRobot {
      * This function is run when the robot is first started up and should be
      * used for any initialization code.
      */
+    
     public void robotInit() {
     	controlStick = new Joystick(0);
         robotDrive = new RobotDrive(frontLeftChannel, rearLeftChannel, frontRightChannel, rearRightChannel);
@@ -199,6 +202,9 @@ public class Robot extends IterativeRobot {
 			} else {
 				SmartDashboard.putBoolean("Motor", false);
 			}
+
+			leftActuator.set(controlStick.getRawButton(3));
+			rightActuator.set(controlStick.getRawButton(3));
           	
             Timer.delay(.04);	// wait 40ms to avoid hogging CPU cycles
         }
@@ -210,5 +216,27 @@ public class Robot extends IterativeRobot {
     public void testPeriodic() {
     	LiveWindow.run();
     }
+
+    //Move forward based on time-based dead reckoning. Pass a negative speed value for moving backwards.
     
+    public void moveForward(int seconds, double speed) {
+		robotDrive.mecanumDrive_Cartesian(0, speed, 0, 0);
+		Timer.delay(seconds);
+		robotDrive.mecanumDrive_Cartesian(0, 0, 0, 0);
+    }
+
+    //Move right based on time-based dead reckoning. Pass a negative speed value for moving left.
+    
+    public void moveSideways(int seconds, double speed) {
+		robotDrive.mecanumDrive_Cartesian(speed, 0, 0, 0);
+		Timer.delay(seconds);
+		robotDrive.mecanumDrive_Cartesian(0, 0, 0, 0);
+    }
+    
+    public void rotateBot(int degrees) {
+    	for (degrees = degrees; lateralGyro.getAngle() != degrees;) {
+    		robotDrive.mecanumDrive_Cartesian(0, 0, lateralGyro.getAngle()-degrees, 0);
+    	}
+		robotDrive.mecanumDrive_Cartesian(0, 0, 0, 0);
+    }
 }
