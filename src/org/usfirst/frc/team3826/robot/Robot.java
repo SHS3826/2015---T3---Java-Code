@@ -20,16 +20,15 @@ import edu.wpi.first.wpilibj.*;
 public class Robot extends IterativeRobot {
 	RobotDrive robotDrive;
 	Joystick controlStick;
-	//DigitalInput rangeFinder = new DigitalInput(2);
-	//Solenoid leftActuator = new Solenoid(0);
-	//Solenoid rightActuator = new Solenoid(1);
+	Solenoid flippers = new Solenoid(0);
+	Solenoid arms = new Solenoid(1);
 	Gyro lateralGyro = new Gyro(0);
-	//AnalogInput distDet = new AnalogInput(1);
 	int autoLoopIncrementer, heading;
-	//Victor encodedMotor = new Victor(4);
-	//Encoder encoderA = new Encoder(0, 1, true);
+	Victor wenchMotor = new Victor(4);
+	Encoder wenchEncoder = new Encoder(2, 3, true);
 	int saitekMultiplier, saitekXValue, saitekYValue, saitekThrottleValue, gyroTotalChange, time;
 	boolean saitekTriggerPulled;
+	Compressor Dwayne = new Compressor(0);
 	double currentHeading, dist, motorLevel;
     final int frontLeftChannel	= 0;
     final int rearLeftChannel	= 1;
@@ -77,11 +76,11 @@ public class Robot extends IterativeRobot {
      * This function is called once each time the robot enters tele-operated mode
      */
     public void teleopInit(){
-    	//lateralGyro.reset();
-    	//currentHeading = 0;
+    	lateralGyro.reset();
     	//encoderA.reset();
-    	//heading = 0;
+    	heading = 0;
     	//motorLevel = 0;
+    	Dwayne.start();
     }
 
     /**
@@ -91,25 +90,10 @@ public class Robot extends IterativeRobot {
         //robotDrive.setSafetyEnabled(true);
         while (isOperatorControl() && isEnabled()) {
         	
-        	
         	// Use the joystick X axis for lateral movement, Y axis for forward movement, and Z axis for rotation.
-        	// This sample does not use field-oriented drive, so the gyro input is set to zero.
-        	// If the trigger on the Saitek controller is pulled, the movement will be much slower.
         	
         	/* Basic Drive Update Code:
         	robotDrive.mecanumDrive_Cartesian(controlStick.getX(), controlStick.getY(), controlStick.getThrottle(), 0); 
-        	*/
-        	
- 			// Limit Switch Code (If the Limit Switch is activated, the motors will stop):
-        	
-        	/*
-        	
-			if (limitSwitch.get()) {        		
-        		robotDrive.mecanumDrive_Cartesian(Math.pow(controlStick.getX(),3), Math.pow(controlStick.getY(),3), Math.pow(controlStick.getThrottle(),3), lateralGyro.getAngle()); 
-        	} else {
-    			robotDrive.mecanumDrive_Cartesian(0, 0, 0, 0);         		
-        	}
-        	
         	*/
         	
         	// This code is the Straight-Drive Code, but with axis changes for the Xbox Controller.
