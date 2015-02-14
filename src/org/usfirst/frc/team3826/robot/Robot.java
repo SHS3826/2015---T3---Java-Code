@@ -137,8 +137,6 @@ public class Robot extends IterativeRobot {
         	//*/
         	
         	//This code drives the robot in a (mostly) straight line, as well as uses Multi-Speed Drive.
-        	 
-        	// UNCOMMENT ASAP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         	
         	if (driveStick.getRawButton(1)) {
         		if (Math.abs(driveStick.getThrottle())>=.15) {
@@ -155,8 +153,6 @@ public class Robot extends IterativeRobot {
         			robotDrive.mecanumDrive_Cartesian(driveStick.getX()*.5, driveStick.getY()*.2, (heading)*.03, 0);
         		}
         	}
-        	
-        	//UNCOMMENT ASAP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
         	rollerMotor.set(controlStick.getX());
 
