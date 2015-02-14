@@ -20,14 +20,17 @@ import edu.wpi.first.wpilibj.*;
  */
 public class Robot extends IterativeRobot {
 	RobotDrive robotDrive;
-	Joystick driveStick;
-	Joystick controlStick;
-	Solenoid flippers = new Solenoid(0);
-	Solenoid arms = new Solenoid(1);
-	Gyro lateralGyro = new Gyro(0);
+	Joystick driveStick = new Joystick(1);
+	Joystick controlStick = new Joystick(0);
+	//Solenoid flippers = new Solenoid(0);
+	//Solenoid arms = new Solenoid(1);
+	Gyro lateralGyro = new Gyro(1);
 	int autoLoopIncrementer, heading;
-	DigitalInput entrySensor = new DigitalInput(4);
-	DigitalInput exitSensor = new DigitalInput(5);
+	DigitalInput limitSwitchBot = new DigitalInput(0);
+	DigitalInput limitSwitchTop = new DigitalInput(1);
+	DigitalInput photoSwitchFront = new DigitalInput(4);
+	DigitalInput photoSwitchEntry = new DigitalInput(5);
+	DigitalInput photoSwitchExit = new DigitalInput(6);
 	Jaguar wenchMotor = new Jaguar(4);
 	Jaguar rollerMotor = new Jaguar(5);
 	Encoder wenchEncoder = new Encoder(2, 3, true);
@@ -39,8 +42,7 @@ public class Robot extends IterativeRobot {
     final int rearLeftChannel	= 1;
     final int frontRightChannel	= 2;
     final int rearRightChannel	= 3;
-    final int joystickChannel	= 0;
-    boolean [] limitswitches = {};
+    //final int joystickChannel	= 0;
 	
     /**
      * This function is run when the robot is first started up and should be
@@ -48,8 +50,7 @@ public class Robot extends IterativeRobot {
      */
     
     public void robotInit() {
-    	controlStick = new Joystick(0);
-        robotDrive = new RobotDrive(frontLeftChannel, rearLeftChannel, frontRightChannel, rearRightChannel);
+        robotDrive = new RobotDrive(frontLeftChannel, rearLeftChannel, rearRightChannel, frontRightChannel);
         robotDrive.setSafetyEnabled(true);
     	robotDrive.setExpiration(10);
     	robotDrive.setInvertedMotor(MotorType.kFrontRight, true);	// invert the left side motors
@@ -95,7 +96,7 @@ public class Robot extends IterativeRobot {
     	//encoderA.reset();
     	heading = 0;
     	//motorLevel = 0;
-    	Dwayne.start();
+    	//Dwayne.start();
     	counter = 0;
     	wenchEncoder.reset();
     }
@@ -133,10 +134,12 @@ public class Robot extends IterativeRobot {
         		}
         	}
         	
-        	*/
+        	//*/
         	
         	//This code drives the robot in a (mostly) straight line, as well as uses Multi-Speed Drive.
-        	       	
+        	 
+        	// UNCOMMENT ASAP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        	
         	if (driveStick.getRawButton(1)) {
         		if (Math.abs(driveStick.getThrottle())>=.15) {
         			robotDrive.mecanumDrive_Cartesian(driveStick.getX(), driveStick.getY(), driveStick.getThrottle(), 0);
@@ -152,22 +155,22 @@ public class Robot extends IterativeRobot {
         			robotDrive.mecanumDrive_Cartesian(driveStick.getX()*.5, driveStick.getY()*.2, (heading)*.03, 0);
         		}
         	}
-
-        	if (controlStick.getRawButton(9)) {rollerMotor.set(.3);} else{rollerMotor.set(0);}
-
-        	if(Math.abs(controlStick.getY())<.1){wenchMotor.set(controlStick.getY());}
-
-        	if (controlStick.getRawButton(10)&&counter>=10){flippers.set(!flippers.get());counter=0;}
-        	counter++;
         	
-        	if (controlStick.getRawAxis(3)>.5&&poopcounter>=10){arms.set(!arms.get());poopcounter=0;}
-        	poopcounter++;
+        	//UNCOMMENT ASAP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
-        	for (int i = 1; i < controlStick.getButtonCount(); i++) {
-        		if (controlStick.getRawButton(i)){carriagePass(i);}
-        	}
+        	rollerMotor.set(controlStick.getX());
+
+        	wenchMotor.set(controlStick.getY()*.3);
+
+        	SmartDashboard.putBoolean("FrontSensor", photoSwitchFront.get());
+        	SmartDashboard.putBoolean("EntrySensor", photoSwitchEntry.get());
+        	SmartDashboard.putBoolean("ExitSensor", photoSwitchExit.get());
+
+        	//if (controlStick.getRawButton(10)&&counter>=10){flippers.set(!flippers.get());counter=0;}
+        	//counter++;
         	
-        	}
+        	//if (controlStick.getRawAxis(3)>.5&&poopcounter>=10){arms.set(!arms.get());poopcounter=0;}
+        	//poopcounter++;     
         	
         	/*
 
@@ -199,6 +202,8 @@ public class Robot extends IterativeRobot {
 			//SmartDashboard.putNumber("Encoder Value", encoderA.get()/497.0);
 			//SmartDashboard.putBoolean("Range Finder", rangeFinder.get());
 			SmartDashboard.putNumber("Gyro", heading);
+			SmartDashboard.putNumber("Encoder", wenchEncoder.get());
+			System.out.println(lateralGyro.getAngle());
 			/*if (encoderA.get()/497<0) {
 				SmartDashboard.putBoolean("Motor", true);
 			} else {
@@ -212,7 +217,7 @@ public class Robot extends IterativeRobot {
           	
             Timer.delay(.04);	// wait 40ms to avoid hogging CPU cycles
         }
-    
+    }
     /**
      * This function is called periodically during test mode
      */
@@ -247,6 +252,8 @@ public class Robot extends IterativeRobot {
     
     //Automatically operates the rollers to take in a new tote based on the sensors positioned on the bottom of the robot.
     
+    /*
+    
     public void acceptTote() {
     	if (!entrySensor.get()&&exitSensor.get() || autoCounter > 50) {
     		
@@ -256,7 +263,11 @@ public class Robot extends IterativeRobot {
     	}
     }
     
+    */
+    
     //Automatically approach tote for consuming.
+    
+    /*
     
     public void approachTote() {
     	if (entrySensor.get() || autoCounter > 25) {
@@ -270,6 +281,8 @@ public class Robot extends IterativeRobot {
     		approachTote();
     	}
     }
+    
+    */
     
     //An intermediary method for parsing info b/c I'm bad at Java.
     
@@ -292,10 +305,12 @@ public class Robot extends IterativeRobot {
     		wenchMotor.set(0);
     	} else {
         	wenchMotor.set((carriageHeight-height)*.03);
-    	}
+        	moveCarriage(height);    	}
     }
     
     //Actuate arms.
+    
+    /*
     
     public void actuateArms(int x) {
     	if (x == 0) {
@@ -306,4 +321,7 @@ public class Robot extends IterativeRobot {
     		arms.set(!arms.get());
     	}
     }
+    
+    */
+    
 }
