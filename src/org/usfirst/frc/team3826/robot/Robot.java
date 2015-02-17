@@ -35,7 +35,7 @@ public class Robot extends IterativeRobot {
 	Jaguar rollerMotor = new Jaguar(5);
 	Encoder wenchEncoder = new Encoder(2, 3, true);
 	int saitekMultiplier, saitekXValue, saitekYValue, saitekThrottleValue, gyroTotalChange, poopcounter, time, counter, autoCounter;
-	boolean saitekTriggerPulled;
+	boolean saitekTriggerPulled, eject;
 	Compressor Dwayne = new Compressor(0);
 	double currentHeading, dist, motorLevel, carriageHeight;
     final int frontLeftChannel	= 0;
@@ -137,14 +137,13 @@ public class Robot extends IterativeRobot {
         	//*/
         	
         	//This code drives the robot in a (mostly) straight line, as well as uses Multi-Speed Drive.
-        	
+        	//if (controlStick.getRawButton(4) || (eject == true)) {
+        	//	rollerMotor.set(-.3);
+        	//} else {
+        	//rollerMotor.set(0);
         	if (driveStick.getRawButton(1)) {
-        		if (Math.abs(driveStick.getThrottle())>=.15) {
         			robotDrive.mecanumDrive_Cartesian(driveStick.getX(), driveStick.getY(), driveStick.getThrottle(), 0);
         			lateralGyro.reset();
-        		} else {
-        			robotDrive.mecanumDrive_Cartesian(driveStick.getX(), driveStick.getY(), (heading)*.03, 0);
-        		}
         	} else {
         		if (Math.abs(driveStick.getThrottle())>=.15) {
         			robotDrive.mecanumDrive_Cartesian(driveStick.getX()*.5, driveStick.getY()*.2, driveStick.getThrottle()*.3, 0);
@@ -154,9 +153,14 @@ public class Robot extends IterativeRobot {
         		}
         	}
 
-        	rollerMotor.set(controlStick.getX());
+    	wenchMotor.set(controlStick.getRawAxis(5)*.3);
+    	System.out.println(controlStick.getRawAxis(5)*.3);
 
-        	wenchMotor.set(controlStick.getY()*.3);
+    	rollerMotor.set(controlStick.getY()*1);
+        	
+        	//if ((carriageHeight <= 6 && photoSwitchExit.get() && driveStick.getRawButton(3) && controlStick.getRawButton(9)) || (eject == true && photoSwitchExit.get())) {
+        	//	eject = true;
+        	//}
 
         	SmartDashboard.putBoolean("FrontSensor", photoSwitchFront.get());
         	SmartDashboard.putBoolean("EntrySensor", photoSwitchEntry.get());
@@ -200,6 +204,7 @@ public class Robot extends IterativeRobot {
 			SmartDashboard.putNumber("Gyro", heading);
 			SmartDashboard.putNumber("Encoder", wenchEncoder.get());
 			System.out.println(lateralGyro.getAngle());
+	    	carriageHeight = wenchEncoder.get()*3.875*3.1415926535/250;
 			/*if (encoderA.get()/497<0) {
 				SmartDashboard.putBoolean("Motor", true);
 			} else {
