@@ -158,6 +158,9 @@ public class Robot extends IterativeRobot {
 
     	rollerMotor.set(controlStick.getY()*1);
         	
+    	
+    	//plz senpai
+    	
         	//if ((carriageHeight <= 6 && photoSwitchExit.get() && driveStick.getRawButton(3) && controlStick.getRawButton(9)) || (eject == true && photoSwitchExit.get())) {
         	//	eject = true;
         	//}
