@@ -210,7 +210,7 @@ public class Robot extends IterativeRobot {
     		wenchEncoder.reset();
     	}
     	
-    	wenchMotor.set(controlStick.getX());
+    	wenchMotor.set(wenchRate);
 
     	if ((controlStick.getRawButton(4) || (photoSwitchFront.get() && !photoSwitchEntry.get())) ) {
         		intake = true;
