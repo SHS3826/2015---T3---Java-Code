@@ -33,11 +33,13 @@ public class Robot extends IterativeRobot {
 	DigitalInput photoSwitchExit = new DigitalInput(6);
 	Jaguar wenchMotor = new Jaguar(4);
 	Jaguar rollerMotor = new Jaguar(5);
-	Encoder wenchEncoder = new Encoder(2, 3, true);
+	Encoder wenchEncoder = new Encoder(7, 8, true);
 	int saitekMultiplier, saitekXValue, saitekYValue, saitekThrottleValue, gyroTotalChange, poopcounter, time, counter, autoCounter;
+	int [] encoderCounter;
 	boolean saitekTriggerPulled, eject;
 	Compressor Dwayne = new Compressor(0);
-	double currentHeading, dist, motorLevel, carriageHeight;
+	String wenchStatus = "stay";
+	double wenchRate, currentHeading, dist, motorLevel, carriageHeight, rollerSpeed;
     final int frontLeftChannel	= 0;
     final int rearLeftChannel	= 1;
     final int frontRightChannel	= 2;
@@ -64,6 +66,7 @@ public class Robot extends IterativeRobot {
     public void autonomousInit() {
     	///autoLoopCounter = 0;
     	counter = 0;
+    	wenchEncoder.reset();
     }
 
     /**
@@ -77,6 +80,7 @@ public class Robot extends IterativeRobot {
 		//	} else {
 		//	myRobot.drive(0.0, 0.0); 	// stop robot
 		//}
+		/*
     	wenchEncoder.reset();
     	if (counter != 1) {
     		counter = 1;
@@ -86,6 +90,21 @@ public class Robot extends IterativeRobot {
     		case 3: moveForward(2, .15); break;
     	}
     	}
+    	*/
+		if (counter < 10) {
+			if (limitSwitchTop.get() || limitSwitchBot.get()) {
+				encoderCounter[counter]=(wenchEncoder.getRaw());
+				counter++;
+			}
+			if (counter % 2 == 0) {
+				wenchMotor.set(.4);
+			} else {
+				wenchMotor.set(-.4);
+			}
+		} else {
+			System.out.println(encoderCounter);
+			wenchMotor.set(0);
+		}
     }
     
     /**
@@ -93,12 +112,13 @@ public class Robot extends IterativeRobot {
      */
     public void teleopInit(){
     	lateralGyro.reset();
-    	//encoderA.reset();
     	heading = 0;
-    	//motorLevel = 0;
-    	//Dwayne.start();
+    	Dwayne.start();
     	counter = 0;
     	wenchEncoder.reset();
+    	wenchEncoder.reset();
+    	rollerSpeed = 0;
+    	wenchEncoder.setDistancePerPulse(1);
     }
 
     /**
@@ -137,6 +157,7 @@ public class Robot extends IterativeRobot {
         	//*/
         	
         	//This code drives the robot in a (mostly) straight line, as well as uses Multi-Speed Drive.
+        	
         	//if (controlStick.getRawButton(4) || (eject == true)) {
         	//	rollerMotor.set(-.3);
         	//} else {
@@ -144,80 +165,71 @@ public class Robot extends IterativeRobot {
         	if (driveStick.getRawButton(1)) {
         			robotDrive.mecanumDrive_Cartesian(driveStick.getX(), driveStick.getY(), driveStick.getThrottle(), 0);
         			lateralGyro.reset();
+        	
         	} else {
         		if (Math.abs(driveStick.getThrottle())>=.15) {
         			robotDrive.mecanumDrive_Cartesian(driveStick.getX()*.5, driveStick.getY()*.2, driveStick.getThrottle()*.3, 0);
         			lateralGyro.reset();
         		} else {
-        			robotDrive.mecanumDrive_Cartesian(driveStick.getX()*.5, driveStick.getY()*.2, (heading)*.03, 0);
+        			robotDrive.mecanumDrive_Cartesian(driveStick.getX()*.5, driveStick.getY()*.2, (heading)*.0, 0);
         		}
         	}
 
-    	wenchMotor.set(controlStick.getRawAxis(5)*.3);
-    	System.out.println(controlStick.getRawAxis(5)*.3);
+    	if(controlStick.getRawButton(1)) {
+    		rollerSpeed -= .06;
+    	} else {
+    		rollerSpeed += .8;
+    	}
+    	if (rollerSpeed > 0 ) {
+    		rollerSpeed = 0;
+    	} else if (rollerSpeed < -.7) {
+    		rollerSpeed = -.7;
+    	}
+    	rollerMotor.set(rollerSpeed);
+    	
+    	if (controlStick.getRawButton(2)) {
+    		wenchStatus = "raise";
+    	} else if (controlStick.getRawButton(3)) {
+    		wenchStatus = "lower";
+    	} else {
+    		wenchStatus = "stay";
+    	}
+    	
+    	if (wenchStatus == "stay") {
+    		wenchRate = 0;
+    	}
+    	if (wenchStatus == "raise") {
+    		wenchRate = 1;
+    	}
+    	if (wenchStatus == "lower") {
+    		wenchRate = -.5;
+    	}
+    	
+    	if (controlStick.getRawButton(8) || controlStick.getRawButton(9)) {
+    		wenchEncoder.reset();
+    	}
+    	
+    	wenchMotor.set(wenchRate);
 
-    	rollerMotor.set(controlStick.getY()*1);
-        	
-    	
-    	//plz senpai
-    	
-        	//if ((carriageHeight <= 6 && photoSwitchExit.get() && driveStick.getRawButton(3) && controlStick.getRawButton(9)) || (eject == true && photoSwitchExit.get())) {
+    	//if ((carriageHeight <= 6 && photoSwitchExit.get() && driveStick.getRawButton(3) && controlStick.getRawButton(9)) || (eject == true && photoSwitchExit.get())) {
         	//	eject = true;
         	//}
 
         	SmartDashboard.putBoolean("FrontSensor", photoSwitchFront.get());
         	SmartDashboard.putBoolean("EntrySensor", photoSwitchEntry.get());
         	SmartDashboard.putBoolean("ExitSensor", photoSwitchExit.get());
-
-        	//if (controlStick.getRawButton(10)&&counter>=10){flippers.set(!flippers.get());counter=0;}
-        	//counter++;
-        	
-        	//if (controlStick.getRawAxis(3)>.5&&poopcounter>=10){arms.set(!arms.get());poopcounter=0;}
-        	//poopcounter++;     
-        	
-        	/*
-
-        	encodedMotor.set(controlStick.getZ());
-        	if (controlStick.getRawButton(1)) {
-        		motorLevel = 1;
-        	} else if (controlStick.getRawButton(2)) {
-        		motorLevel = 0;
-        	} else if (controlStick.getRawButton(3)) {
-        		motorLevel = -1;
-        	} else if (controlStick.getRawButton(4)) {
-        		motorLevel = 5;
-        	}
-        	
-        	*/
         	
         	// This code implements FO-Drive.
         	
             //robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.5, controlStick.getY()*.2, controlStick.getThrottle()*.3, lateralGyro.getAngle());
         	
-			//System.out.println(encoderA.get()/497.0 + " " + motorLevel);
-        	
-        	//if (Math.abs(lateralGyro.getAngle()) > .5) {
-        	//	heading+=lateralGyro.getAngle();
-        	//}
         	heading = (int) lateralGyro.getAngle();
         	SmartDashboard.putNumber("Raw", lateralGyro.getAngle());
         	//lateralGyro.reset();
-			//SmartDashboard.putNumber("Encoder Value", encoderA.get()/497.0);
-			//SmartDashboard.putBoolean("Range Finder", rangeFinder.get());
 			SmartDashboard.putNumber("Gyro", heading);
 			SmartDashboard.putNumber("Encoder", wenchEncoder.get());
 			System.out.println(lateralGyro.getAngle());
-	    	carriageHeight = wenchEncoder.get()*3.875*3.1415926535/250;
-			/*if (encoderA.get()/497<0) {
-				SmartDashboard.putBoolean("Motor", true);
-			} else {
-				SmartDashboard.putBoolean("Motor", false);
-			}
-
-			leftActuator.set(controlStick.getRawButton(3));
-			rightActuator.set(controlStick.getRawButton(3));
-          	
-          	*/
+	    	carriageHeight = wenchEncoder.get()*3.875*3.1415926535/2000;
           	
             Timer.delay(.04);	// wait 40ms to avoid hogging CPU cycles
         }
