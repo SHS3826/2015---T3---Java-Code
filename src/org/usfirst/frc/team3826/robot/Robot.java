@@ -40,7 +40,7 @@ public class Robot extends IterativeRobot {
 	boolean saitekTriggerPulled, eject, intake;
 	Compressor Dwayne = new Compressor(0);
 	String wenchStatus = "stay";
-	double wenchRate, currentHeading, dist, motorLevel, carriageHeight, rollerSpeed;
+	double wenchRate, currentHeading, dist, motorLevel, carriageHeight, rollerSpeed, wantedHeight;
     final int frontLeftChannel	= 0;
     final int rearLeftChannel	= 1;
     final int frontRightChannel	= 2;
@@ -176,6 +176,9 @@ public class Robot extends IterativeRobot {
         		}
         	}
 
+        
+        	//if (controlStick.getPOV()==)
+        
     	if(controlStick.getRawButton(1)) {
     		rollerSpeed -= .06;
     	} else {
@@ -196,6 +199,8 @@ public class Robot extends IterativeRobot {
     		wenchStatus = "stay";
     	}
     	
+    	//if ()
+    	
     	if (wenchStatus == "stay") {
     		wenchRate = 0;
     	}
@@ -206,7 +211,7 @@ public class Robot extends IterativeRobot {
     		wenchRate = -.7;
     	}
     	
-    	if (controlStick.getRawButton(8) || controlStick.getRawButton(9)) {
+    	if (controlStick.getRawButton(10) || controlStick.getRawButton(9)) {
     		wenchEncoder.reset();
     	}
     	
@@ -225,10 +230,19 @@ public class Robot extends IterativeRobot {
     	} else {
     		rollerMotor.set(rollerSpeed);
     	}
+    	
+
+    	if (Math.abs(carriageHeight-wantedHeight) < .1) {
+    		wenchMotor.set(0);
+    	} else {
+        	wenchMotor.set((carriageHeight-wantedHeight)*.03);
+        	moveCarriage(wantedHeight);    	
+        }
 
         	SmartDashboard.putBoolean("FrontSensor", photoSwitchFront.get());
         	SmartDashboard.putBoolean("EntrySensor", photoSwitchEntry.get());
         	SmartDashboard.putBoolean("ExitSensor", photoSwitchExit.get());
+        	SmartDashboard.putNumber("POV", controlStick.getPOV());
         	
         	// This code implements FO-Drive.
         	
@@ -241,7 +255,8 @@ public class Robot extends IterativeRobot {
 			SmartDashboard.putNumber("Wench Voltage", PDP.getCurrent(4));
 			SmartDashboard.putNumber("Encoder", wenchEncoder.get());
 			System.out.println(lateralGyro.getAngle());
-	    	carriageHeight = wenchEncoder.get()*3.875*3.1415926535/2000;
+	    	carriageHeight = wenchEncoder.get()*3.875*3.1415926535/2048;
+			SmartDashboard.putNumber("Carriage Height", carriageHeight);
           	
             Timer.delay(.04);	// wait 40ms to avoid hogging CPU cycles
         }
