@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj.RobotDrive.MotorType;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.*;
+import edu.wpi.first.wpilibj.CameraServer;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -32,9 +33,12 @@ public class Robot extends IterativeRobot {
 	DigitalInput photoSwitchEntry = new DigitalInput(5);
 	DigitalInput photoSwitchExit = new DigitalInput(6);
 	Jaguar wenchMotor = new Jaguar(4);
-	Jaguar rollerMotor = new Jaguar(5);
+	Jaguar rollerMotor = new Jaguar(5); 
+	Servo leftServo = new Servo(6);
+	Servo rightServo = new Servo(7);
 	PowerDistributionPanel PDP = new PowerDistributionPanel();
 	Encoder wenchEncoder = new Encoder(7, 8, true);
+	CameraServer frontCamera;
 	int saitekMultiplier, saitekXValue, saitekYValue, saitekThrottleValue, gyroTotalChange, poopcounter, time, counter, autoCounter;
 	int [] encoderCounter;
 	boolean saitekTriggerPulled, eject, intake;
@@ -59,6 +63,9 @@ public class Robot extends IterativeRobot {
     	robotDrive.setInvertedMotor(MotorType.kFrontRight, true);	// invert the left side motors
     	robotDrive.setInvertedMotor(MotorType.kRearRight, true);	// you may need to change or remove this to match your robot
     	SmartDashboard.putNumber("AutoMode", 0);
+    	frontCamera = CameraServer.getInstance();
+    	frontCamera.setQuality(50);
+    	frontCamera.startAutomaticCapture("cam0");
     }
     
     /**
@@ -176,10 +183,21 @@ public class Robot extends IterativeRobot {
         		}
         	}
 
+
+            if (controlStick.getRawButton(5)&&controlStick.getRawButton(9)) {
+            	wantedHeight = 0;
+            }
+            if (controlStick.getRawButton(6)&&controlStick.getRawButton(9)) {
+            	wantedHeight = 14;
+            }
+            if (controlStick.getRawButton(7)&&controlStick.getRawButton(9)) {
+            	wantedHeight = 0;
+            }
+            if (controlStick.getRawButton(8)&&controlStick.getRawButton(9)) {
+            	wantedHeight = 52;
+            }
         
-        	//if (controlStick.getPOV()==)
-        
-    	if(controlStick.getRawButton(1)) {
+    	if(controlStick.getRawButton(1)&&!controlStick.getRawButton(9)) {
     		rollerSpeed -= .06;
     	} else {
     		rollerSpeed += .8;
@@ -191,12 +209,21 @@ public class Robot extends IterativeRobot {
     	}
     	//rollerMotor.set(rollerSpeed);
     	
-    	if (controlStick.getRawButton(2)) {
+    	if (controlStick.getRawButton(5)&&!controlStick.getRawButton(9)) {
     		wenchStatus = "raise";
-    	} else if (controlStick.getRawButton(3)) {
+    	} else if (controlStick.getRawButton(6)&&!controlStick.getRawButton(9)) {
     		wenchStatus = "lower";
     	} else {
     		wenchStatus = "stay";
+    	}
+
+    	if (controlStick.getRawButton(9)&& controlStick.getRawButton(3)) {
+    		leftServo.set(0);
+    		rightServo.set(0);
+    	}
+    	if (controlStick.getRawButton(9)&&controlStick.getRawButton(4)) {
+    		leftServo.set(.6);
+    		rightServo.set(.6);
     	}
     	
     	//if ()
@@ -211,17 +238,17 @@ public class Robot extends IterativeRobot {
     		wenchRate = -.7;
     	}
     	
-    	if (controlStick.getRawButton(10) || controlStick.getRawButton(9)) {
+    	if (controlStick.getRawButton(1)&&controlStick.getRawButton(9)&&controlStick.getRawButton(2)) {
     		wenchEncoder.reset();
     	}
     	
     	wenchMotor.set(wenchRate);
 
-    	if ((controlStick.getRawButton(4) || (photoSwitchFront.get() && !photoSwitchEntry.get())) ) {
+    	if ((controlStick.getRawButton(5) || (photoSwitchFront.get() && !photoSwitchEntry.get())) &&!controlStick.getRawButton(9)) {
         		intake = true;
         } else 
     	
-    	if (controlStick.getRawButton(5) || !photoSwitchFront.get()) {
+    	if (controlStick.getRawButton(6) || !photoSwitchFront.get()&&!controlStick.getRawButton(9)) {
     		intake = false;
     	}
     	
@@ -235,8 +262,7 @@ public class Robot extends IterativeRobot {
     	if (Math.abs(carriageHeight-wantedHeight) < .1) {
     		wenchMotor.set(0);
     	} else {
-        	wenchMotor.set((carriageHeight-wantedHeight)*.03);
-        	moveCarriage(wantedHeight);    	
+        	wenchMotor.set((carriageHeight-wantedHeight)*.03); 	
         }
 
         	SmartDashboard.putBoolean("FrontSensor", photoSwitchFront.get());
@@ -254,7 +280,7 @@ public class Robot extends IterativeRobot {
 			SmartDashboard.putNumber("Gyro", heading);
 			SmartDashboard.putNumber("Wench Voltage", PDP.getCurrent(4));
 			SmartDashboard.putNumber("Encoder", wenchEncoder.get());
-			System.out.println(lateralGyro.getAngle());
+			//System.out.println(lateralGyro.getAngle());
 	    	carriageHeight = wenchEncoder.get()*3.875*3.1415926535/2048;
 			SmartDashboard.putNumber("Carriage Height", carriageHeight);
           	
