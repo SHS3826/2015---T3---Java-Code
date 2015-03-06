@@ -36,9 +36,11 @@ public class Robot extends IterativeRobot {
 	Jaguar rollerMotor = new Jaguar(5); 
 	Servo leftServo = new Servo(6);
 	Servo rightServo = new Servo(7);
+	Servo leftBServo = new Servo(8);
+	Servo rightBServo = new Servo(9);
 	PowerDistributionPanel PDP = new PowerDistributionPanel();
 	Encoder wenchEncoder = new Encoder(7, 8, true);
-	CameraServer frontCamera;
+	//CameraServer frontCamera;
 	int saitekMultiplier, saitekXValue, saitekYValue, saitekThrottleValue, gyroTotalChange, poopcounter, time, counter, autoCounter;
 	int [] encoderCounter;
 	boolean saitekTriggerPulled, eject, intake;
@@ -63,9 +65,9 @@ public class Robot extends IterativeRobot {
     	robotDrive.setInvertedMotor(MotorType.kFrontRight, true);	// invert the left side motors
     	robotDrive.setInvertedMotor(MotorType.kRearRight, true);	// you may need to change or remove this to match your robot
     	SmartDashboard.putNumber("AutoMode", 0);
-    	frontCamera = CameraServer.getInstance();
-    	frontCamera.setQuality(50);
-    	frontCamera.startAutomaticCapture("cam0");
+    	//frontCamera = CameraServer.getInstance();
+    	//frontCamera.setQuality(50);
+    	//frontCamera.startAutomaticCapture("cam0");
     }
     
     /**
@@ -188,13 +190,13 @@ public class Robot extends IterativeRobot {
             	wantedHeight = 0;
             }
             if (controlStick.getRawButton(6)&&controlStick.getRawButton(9)) {
-            	wantedHeight = 14;
+            	wantedHeight = -2048;
             }
             if (controlStick.getRawButton(7)&&controlStick.getRawButton(9)) {
-            	wantedHeight = 0;
+            	wantedHeight = -2048;
             }
             if (controlStick.getRawButton(8)&&controlStick.getRawButton(9)) {
-            	wantedHeight = 52;
+            	wantedHeight = -2048;
             }
         
     	if(controlStick.getRawButton(1)&&!controlStick.getRawButton(9)) {
@@ -217,13 +219,26 @@ public class Robot extends IterativeRobot {
     		wenchStatus = "stay";
     	}
 
-    	if (controlStick.getRawButton(9)&& controlStick.getRawButton(3)) {
+    	if (!controlStick.getRawButton(9)&& controlStick.getRawButton(3)) {
     		leftServo.set(0);
     		rightServo.set(0);
+    		leftBServo.set(0);
+    		rightBServo.set(0);
+    	}
+
+    	if (controlStick.getRawButton(9)&& controlStick.getRawButton(3)) {
+    		leftServo.set(.6);
+    		rightServo.set(.6);
+    		leftBServo.set(.6);
+    		rightBServo.set(.6);
     	}
     	if (controlStick.getRawButton(9)&&controlStick.getRawButton(4)) {
     		leftServo.set(.6);
     		rightServo.set(.6);
+    	}
+    	if (!controlStick.getRawButton(9)&&controlStick.getRawButton(4)) {
+    		leftServo.set(0);
+    		rightServo.set(0);
     	}
     	
     	//if ()
@@ -232,38 +247,46 @@ public class Robot extends IterativeRobot {
     		wenchRate = 0;
     	}
     	if (wenchStatus == "raise") {
-    		wenchRate = .5;
+    		//wenchRate = 1;
     	}
     	if (wenchStatus == "lower") {
-    		wenchRate = -.7;
+    		//wenchRate = -1;
     	}
     	
     	if (controlStick.getRawButton(1)&&controlStick.getRawButton(9)&&controlStick.getRawButton(2)) {
     		wenchEncoder.reset();
     	}
     	
-    	wenchMotor.set(wenchRate);
+    	//wenchMotor.set(-wenchRate);
+    	wenchMotor.set(controlStick.getRawAxis(1));
 
-    	if ((controlStick.getRawButton(5) || (photoSwitchFront.get() && !photoSwitchEntry.get())) &&!controlStick.getRawButton(9)) {
+    	if (((controlStick.getRawButton(2)) || (photoSwitchFront.get() && !photoSwitchEntry.get()))) {
         		intake = true;
         } else 
     	
-    	if (controlStick.getRawButton(6) || !photoSwitchFront.get()&&!controlStick.getRawButton(9)) {
+    	if ((controlStick.getRawButton(2)) || !photoSwitchFront.get()) {
     		intake = false;
     	}
     	
     	if (intake == true) {
-    		rollerMotor.set(-.7);
+    		if(photoSwitchFront.get() && !photoSwitchEntry.get()) {
+    		rollerMotor.set(-.5);
+    		} else if(photoSwitchFront.get() && photoSwitchEntry.get()) {
+    			rollerMotor.set(-.3);
+    		}
     	} else {
     		rollerMotor.set(rollerSpeed);
     	}
     	
 
-    	if (Math.abs(carriageHeight-wantedHeight) < .1) {
-    		wenchMotor.set(0);
-    	} else {
-        	wenchMotor.set((carriageHeight-wantedHeight)*.03); 	
+    	if (!(controlStick.getRawButton(9)&&controlStick.getRawButton(3)&&controlStick.getRawButton(4))) {
+        	//wenchMotor.set((carriageHeight-wantedHeight)*.0003); 	
         }
+    	/*if (controlStick.getRawButton(9)&&controlStick.getRawButton(7)) {
+    		if(wenchEncoder.get()!=2048) {
+    			wenchMotor.set((2048-wenchEncoder.get())*.03);
+    		}
+    	}*/
 
         	SmartDashboard.putBoolean("FrontSensor", photoSwitchFront.get());
         	SmartDashboard.putBoolean("EntrySensor", photoSwitchEntry.get());
@@ -281,7 +304,8 @@ public class Robot extends IterativeRobot {
 			SmartDashboard.putNumber("Wench Voltage", PDP.getCurrent(4));
 			SmartDashboard.putNumber("Encoder", wenchEncoder.get());
 			//System.out.println(lateralGyro.getAngle());
-	    	carriageHeight = wenchEncoder.get()*3.875*3.1415926535/2048;
+	    	//carriageHeight = wenchEncoder.get()*3.875*3.1415926535/2048;
+			carriageHeight = wenchEncoder.get();
 			SmartDashboard.putNumber("Carriage Height", carriageHeight);
           	
             Timer.delay(.04);	// wait 40ms to avoid hogging CPU cycles
