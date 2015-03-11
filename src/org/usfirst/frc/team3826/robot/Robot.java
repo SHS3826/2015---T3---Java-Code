@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj.CameraServer;
+import edu.wpi.first.wpilibj.PIDController;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -41,16 +42,17 @@ public class Robot extends IterativeRobot {
 	PowerDistributionPanel PDP = new PowerDistributionPanel();
 	Encoder wenchEncoder = new Encoder(7, 8, true);
 	//CameraServer frontCamera;
-	int saitekMultiplier, saitekXValue, saitekYValue, saitekThrottleValue, gyroTotalChange, poopcounter, time, counter, autoCounter;
+	int saitekMultiplier, saitekXValue, saitekYValue, saitekThrottleValue, gyroTotalChange, poopcounter, time, counter, autoCounter, botWench, totWench, binWench, topWench;
 	int [] encoderCounter;
 	boolean saitekTriggerPulled, eject, intake;
 	Compressor Dwayne = new Compressor(0);
 	String wenchStatus = "stay";
-	double wenchRate, currentHeading, dist, motorLevel, carriageHeight, rollerSpeed, wantedHeight;
+	double wenchRate, currentHeading, dist, motorLevel, carriageHeight, rollerSpeed, wantedHeight, Proportion, Integral, Derivative;
     final int frontLeftChannel	= 0;
     final int rearLeftChannel	= 1;
     final int frontRightChannel	= 2;
     final int rearRightChannel	= 3;
+	PIDController wenchControl = new PIDController(0.002, 0.0, -0.001, wenchEncoder, wenchMotor);
     //final int joystickChannel	= 0;
 	
     /**
@@ -62,9 +64,14 @@ public class Robot extends IterativeRobot {
         robotDrive = new RobotDrive(frontLeftChannel, rearLeftChannel, rearRightChannel, frontRightChannel);
         robotDrive.setSafetyEnabled(true);
     	robotDrive.setExpiration(10);
+    	wenchControl.enable();
     	robotDrive.setInvertedMotor(MotorType.kFrontRight, true);	// invert the left side motors
     	robotDrive.setInvertedMotor(MotorType.kRearRight, true);	// you may need to change or remove this to match your robot
     	SmartDashboard.putNumber("AutoMode", 0);
+    	botWench = 0;
+    	totWench = 0;
+    	binWench = 0;
+    	topWench = 7414;
     	//frontCamera = CameraServer.getInstance();
     	//frontCamera.setQuality(50);
     	//frontCamera.startAutomaticCapture("cam0");
@@ -76,6 +83,7 @@ public class Robot extends IterativeRobot {
     public void autonomousInit() {
     	///autoLoopCounter = 0;
     	counter = 0;
+    	autoCounter = 0;
     	wenchEncoder.reset();
     }
 
@@ -83,39 +91,42 @@ public class Robot extends IterativeRobot {
      * This function is called periodically during autonomous
      */
 	public void autonomousPeriodic() {
-    	//if(autoLoopCounter < 100) //Check if we've completed 100 loops (approximately 2 seconds)
-		//{
-		//	myRobot.drive(-0.5, 0.0); 	// drive forwards half speed
-		//	autoLoopCounter++;
-		//	} else {
-		//	myRobot.drive(0.0, 0.0); 	// stop robot
-		//}
-		/*
-    	wenchEncoder.reset();
-    	if (counter != 1) {
-    		counter = 1;
-    		switch (SmartDashboard.getInt("AutoMode")) {
-    		case 1: break;
-    		case 2:	moveForward(1, .3); break;
-    		case 3: moveForward(2, .15); break;
-    	}
-    	}
-    	*/
-		if (counter < 10) {
-			if (limitSwitchTop.get() || limitSwitchBot.get()) {
-				encoderCounter[counter]=(wenchEncoder.getRaw());
-				counter++;
-			}
-			if (counter % 2 == 0) {
-				wenchMotor.set(.4);
-			} else {
-				wenchMotor.set(-.4);
-			}
-		} else {
-			System.out.println(encoderCounter);
-			wenchMotor.set(0);
+		
+		//Preliminary code to reset
+		
+		//USE ME TO MOVE CARRIAGE:
+		//wenchControl.setSetpoint( - INSERT HEIGHT HERE - );
+		
+    	/*wenchEncoder.reset();
+    	if (counter < 190) {
+    		robotDrive.mecanumDrive_Cartesian(0, -.3, 0, 0);
+    		counter++;
+    	} else {
+    		robotDrive.mecanumDrive_Cartesian(0, 0, 0, 0);
+    	}*/
+		if (counter == 0) {
+    		robotDrive.mecanumDrive_Cartesian(0, .3, lateralGyro.getAngle()*.03, 0);
+		    autoCounter++;
 		}
-    }
+		if ((photoSwitchFront.get() || autoCounter > 100) && counter == 0) {
+			counter = 1;
+		}
+		if (counter == 1) {
+	    		if(photoSwitchFront.get() && !photoSwitchEntry.get()) {
+	    		rollerMotor.set(-.5);
+	    		} else if(photoSwitchFront.get() && photoSwitchEntry.get()) {
+	    			rollerMotor.set(-.3);
+	    		}
+		}
+		if (counter == 1 && !photoSwitchFront.get()) {
+    		rollerMotor.set(0);
+    		counter = 2;
+    	}
+		if (counter == 2) {
+			
+		}
+    	}
+    	
     
     /**
      * This function is called once each time the robot enters teleoperated mode
@@ -128,7 +139,9 @@ public class Robot extends IterativeRobot {
     	wenchEncoder.reset();
     	wenchEncoder.reset();
     	rollerSpeed = 0;
+    	wenchControl.setOutputRange(-1, .5);
     	wenchEncoder.setDistancePerPulse(1);
+    	wantedHeight = 0;
     }
 
     /**
@@ -153,14 +166,14 @@ public class Robot extends IterativeRobot {
         			robotDrive.mecanumDrive_Cartesian(controlStick.getRawAxis(4), controlStick.getY(), controlStick.getX(), 0);
         			lateralGyro.reset();
         		} else {
-        			robotDrive.mecanumDrive_Cartesian(controlStick.getRawAxis(4), controlStick.getY(), -(lateralGyro.getAngle())*.03, 0);
+        			robotDrive.mecanumDrive_Cartesian(controlStick.getRawAxis(4), controlStick.getY(), (lateralGyro.getAngle())*.03, 0);
         		}
         	} else {
         		if (Math.abs(controlStick.getX())>=.15) {
         			robotDrive.mecanumDrive_Cartesian(controlStick.getRawAxis(4)*.5, controlStick.getY()*.2, controlStick.getX()*.3, 0);
         			lateralGyro.reset();
         		} else {
-        			robotDrive.mecanumDrive_Cartesian(controlStick.getRawAxis(4)*.5, controlStick.getY()*.2, -(lateralGyro.getAngle())*.03, 0);
+        			robotDrive.mecanumDrive_Cartesian(controlStick.getRawAxis(4)*.5, controlStick.getY()*.2, (lateralGyro.getAngle())*.03, 0);
         		}
         	}
         	
@@ -171,34 +184,35 @@ public class Robot extends IterativeRobot {
         	//if (controlStick.getRawButton(4) || (eject == true)) {
         	//	rollerMotor.set(-.3);
         	//} else {
-        	//rollerMotor.set(0);
-        	if (driveStick.getRawButton(1)) {
+        	//rollerMotor.set(0);}
+        	
+        	/*if (driveStick.getRawButton(1)) {
         			robotDrive.mecanumDrive_Cartesian(driveStick.getX(), driveStick.getY(), driveStick.getThrottle(), 0);
         			lateralGyro.reset();
         	
-        	} else {
-        		if (Math.abs(driveStick.getThrottle())>=.15) {
-        			robotDrive.mecanumDrive_Cartesian(driveStick.getX()*.5, driveStick.getY()*.2, driveStick.getThrottle()*.3, 0);
+        	} else {*/
+        		if (Math.abs(driveStick.getThrottle())>=.10) {
+        			robotDrive.mecanumDrive_Cartesian(driveStick.getX()*.6, driveStick.getY()*.4, driveStick.getThrottle()*.5, 0);
         			lateralGyro.reset();
         		} else {
-        			robotDrive.mecanumDrive_Cartesian(driveStick.getX()*.5, driveStick.getY()*.2, (heading)*.0, 0);
+        			robotDrive.mecanumDrive_Cartesian(driveStick.getX()*.6, driveStick.getY()*.4, lateralGyro.getAngle()*.03, 0);
         		}
-        	}
-
 
             if (controlStick.getRawButton(5)&&controlStick.getRawButton(9)) {
             	wantedHeight = 0;
             }
             if (controlStick.getRawButton(6)&&controlStick.getRawButton(9)) {
-            	wantedHeight = -2048;
+            	wantedHeight = -2489;
             }
             if (controlStick.getRawButton(7)&&controlStick.getRawButton(9)) {
-            	wantedHeight = -2048;
+            	wantedHeight = -5000;
             }
             if (controlStick.getRawButton(8)&&controlStick.getRawButton(9)) {
-            	wantedHeight = -2048;
+            	wantedHeight = -1600;
             }
-        
+        if (controlStick.getRawButton(4)&&controlStick.getRawButton(9)) {
+        	wantedHeight = 7414;
+        }
     	if(controlStick.getRawButton(1)&&!controlStick.getRawButton(9)) {
     		rollerSpeed -= .06;
     	} else {
@@ -209,64 +223,39 @@ public class Robot extends IterativeRobot {
     	} else if (rollerSpeed < -.7) {
     		rollerSpeed = -.7;
     	}
-    	//rollerMotor.set(rollerSpeed);
-    	
-    	if (controlStick.getRawButton(5)&&!controlStick.getRawButton(9)) {
-    		wenchStatus = "raise";
-    	} else if (controlStick.getRawButton(6)&&!controlStick.getRawButton(9)) {
-    		wenchStatus = "lower";
-    	} else {
-    		wenchStatus = "stay";
-    	}
 
     	if (!controlStick.getRawButton(9)&& controlStick.getRawButton(3)) {
     		leftServo.set(0);
     		rightServo.set(0);
-    		leftBServo.set(0);
-    		rightBServo.set(0);
     	}
 
     	if (controlStick.getRawButton(9)&& controlStick.getRawButton(3)) {
     		leftServo.set(.6);
     		rightServo.set(.6);
-    		leftBServo.set(.6);
-    		rightBServo.set(.6);
-    	}
-    	if (controlStick.getRawButton(9)&&controlStick.getRawButton(4)) {
-    		leftServo.set(.6);
-    		rightServo.set(.6);
-    	}
-    	if (!controlStick.getRawButton(9)&&controlStick.getRawButton(4)) {
-    		leftServo.set(0);
-    		rightServo.set(0);
     	}
     	
-    	//if ()
-    	
-    	if (wenchStatus == "stay") {
-    		wenchRate = 0;
-    	}
-    	if (wenchStatus == "raise") {
-    		//wenchRate = 1;
-    	}
-    	if (wenchStatus == "lower") {
-    		//wenchRate = -1;
-    	}
-    	
+    	wenchRate = 0;
     	if (controlStick.getRawButton(1)&&controlStick.getRawButton(9)&&controlStick.getRawButton(2)) {
     		wenchEncoder.reset();
     	}
-    	
-    	//wenchMotor.set(-wenchRate);
-    	wenchMotor.set(controlStick.getRawAxis(1));
 
-    	if (((controlStick.getRawButton(2)) || (photoSwitchFront.get() && !photoSwitchEntry.get()))) {
-        		intake = true;
-        } else 
-    	
-    	if ((controlStick.getRawButton(2)) || !photoSwitchFront.get()) {
-    		intake = false;
+    	if (controlStick.getRawButton(2)) {
+    		if (intake == false && photoSwitchEntry.get()) {
+    			leftServo.set(.6);
+    			rightServo.set(.6);
+    			if (wenchEncoder.get()> 0) {
+    				wenchControl.setSetpoint(0);
+    			} else
+    			if ()
+    		}
     	}
+    	
+    	if (!photoSwitchFront.get()) {
+    	    		intake = false;
+    	    	} else
+    	if (((photoSwitchFront.get() && !photoSwitchEntry.get()))) {
+        		intake = true;
+        }
     	
     	if (intake == true) {
     		if(photoSwitchFront.get() && !photoSwitchEntry.get()) {
@@ -278,34 +267,17 @@ public class Robot extends IterativeRobot {
     		rollerMotor.set(rollerSpeed);
     	}
     	
-
-    	if (!(controlStick.getRawButton(9)&&controlStick.getRawButton(3)&&controlStick.getRawButton(4))) {
-        	//wenchMotor.set((carriageHeight-wantedHeight)*.0003); 	
-        }
-    	/*if (controlStick.getRawButton(9)&&controlStick.getRawButton(7)) {
-    		if(wenchEncoder.get()!=2048) {
-    			wenchMotor.set((2048-wenchEncoder.get())*.03);
-    		}
-    	}*/
+    	wenchControl.setSetpoint(wantedHeight);
 
         	SmartDashboard.putBoolean("FrontSensor", photoSwitchFront.get());
         	SmartDashboard.putBoolean("EntrySensor", photoSwitchEntry.get());
-        	SmartDashboard.putBoolean("ExitSensor", photoSwitchExit.get());
-        	SmartDashboard.putNumber("POV", controlStick.getPOV());
-        	
-        	// This code implements FO-Drive.
-        	
-            //robotDrive.mecanumDrive_Cartesian(controlStick.getX()*.5, controlStick.getY()*.2, controlStick.getThrottle()*.3, lateralGyro.getAngle());
-        	
+        	SmartDashboard.putNumber("POV", controlStick.getPOV());        	
         	heading = (int) lateralGyro.getAngle();
         	SmartDashboard.putNumber("Raw", lateralGyro.getAngle());
-        	//lateralGyro.reset();
 			SmartDashboard.putNumber("Gyro", heading);
 			SmartDashboard.putNumber("Wench Voltage", PDP.getCurrent(4));
 			SmartDashboard.putNumber("Encoder", wenchEncoder.get());
-			//System.out.println(lateralGyro.getAngle());
-	    	//carriageHeight = wenchEncoder.get()*3.875*3.1415926535/2048;
-			carriageHeight = wenchEncoder.get();
+			carriageHeight = -wenchEncoder.get();
 			SmartDashboard.putNumber("Carriage Height", carriageHeight);
           	
             Timer.delay(.04);	// wait 40ms to avoid hogging CPU cycles
@@ -321,42 +293,49 @@ public class Robot extends IterativeRobot {
     //Move forward based on time-based dead reckoning. Pass a negative speed value for moving backwards.
     
     public void moveForward(int seconds, double speed) {
-		robotDrive.mecanumDrive_Cartesian(0, speed, 0, 0);
-		Timer.delay(seconds);
+    	if(counter<=(Math.sqrt(seconds)/50)) {
+		robotDrive.mecanumDrive_Cartesian(0, speed, lateralGyro.getAngle()*.03, 0);
+		Timer.delay(Math.sqrt(seconds)/50);
 		robotDrive.mecanumDrive_Cartesian(0, 0, 0, 0);
+    	}
     }
 
     //Move right based on time-based dead reckoning. Pass a negative speed value for moving left.
     
     public void moveSideways(int seconds, double speed) {
-		robotDrive.mecanumDrive_Cartesian(speed, 0, 0, 0);
+    	if(counter<=(Math.sqrt(seconds)/50)) {
+		robotDrive.mecanumDrive_Cartesian(speed, 0, (lateralGyro.getAngle())*.03, 0);
 		Timer.delay(seconds);
 		robotDrive.mecanumDrive_Cartesian(0, 0, 0, 0);
+    	}
     }
     
     //Rotate the bot right by a passed number of degrees (Pass a negative value to turn left)
     
     public void rotateBot(int degrees) {
     	for (degrees = degrees; lateralGyro.getAngle() != degrees;) {
-    		robotDrive.mecanumDrive_Cartesian(0, 0, lateralGyro.getAngle()-degrees, 0);
+    		robotDrive.mecanumDrive_Cartesian(0, 0, 0, 0);
     	}
 		robotDrive.mecanumDrive_Cartesian(0, 0, 0, 0);
+		lateralGyro.reset();
     }
     
     //Automatically operates the rollers to take in a new tote based on the sensors positioned on the bottom of the robot.
     
-    /*
-    
     public void acceptTote() {
-    	if (!entrySensor.get()&&exitSensor.get() || autoCounter > 50) {
-    		
+    	if (!photoSwitchFront.get() || autoCounter > 250) {
+    		rollerMotor.set(0);
     	} else {
     		acceptTote();
     		autoCounter++;
+    		if(photoSwitchFront.get() && !photoSwitchEntry.get()) {
+    		rollerMotor.set(-.5);
+    		} else if(photoSwitchFront.get() && photoSwitchEntry.get()) {
+    			rollerMotor.set(-.3);
+    		}
+    		Timer.delay(20);
     	}
     }
-    
-    */
     
     //Automatically approach tote for consuming.
     
@@ -379,27 +358,20 @@ public class Robot extends IterativeRobot {
     
     //An intermediary method for parsing info b/c I'm bad at Java.
     
-    public void carriagePass(int x) {
+    /*public void carriagePass(int x) {
     	switch (x) {
-    	case 1: moveCarriage(4); break;
-    	case 2: moveCarriage(17); break;
-    	case 3: moveCarriage(30); break;
-    	case 4: moveCarriage(43); break;
-    	case 7: moveCarriage(52); break;
-    	case 8: moveCarriage(0); break;
+    	case 1: moveCarriage(0); break; //Bottom
+    	case 2: moveCarriage(2048); break;
+    	case 3: moveCarriage(0); break;
+    	case 4: moveCarriage(7414); break;
     	}
     }
     
-    //Lowers or raises the carriage to a passed height.
+    //Lowers or raises the carriage to a passed height in encoder count.
     
     public void moveCarriage(double height)  {
-    	carriageHeight = wenchEncoder.get()*3.875*3.1415926535/250;
-    	if (Math.abs(carriageHeight-height) < .1) {
-    		wenchMotor.set(0);
-    	} else {
-        	wenchMotor.set((carriageHeight-height)*.03);
-        	moveCarriage(height);    	}
-    }
+    	wenchControl.setSetpoint(wantedHeight);
+    }*/
     
     //Actuate arms.
     
@@ -416,5 +388,4 @@ public class Robot extends IterativeRobot {
     }
     
     */
-    
 }
