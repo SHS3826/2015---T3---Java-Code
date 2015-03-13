@@ -85,6 +85,7 @@ public class Robot extends IterativeRobot {
     	counter = 0;
     	autoCounter = 0;
     	wenchEncoder.reset();
+    	lateralGyro.reset();
     }
 
     /**
@@ -108,8 +109,9 @@ public class Robot extends IterativeRobot {
     		robotDrive.mecanumDrive_Cartesian(0, .3, lateralGyro.getAngle()*.03, 0);
 		    autoCounter++;
 		}
-		if ((photoSwitchFront.get() || autoCounter > 100) && counter == 0) {
+		if ((photoSwitchFront.get() || autoCounter > 190) && counter == 0) {
 			counter = 1;
+			robotDrive.mecanumDrive_Cartesian(0, 0, 0, 0);
 		}
 		if (counter == 1) {
 	    		if(photoSwitchFront.get() && !photoSwitchEntry.get()) {
@@ -121,9 +123,15 @@ public class Robot extends IterativeRobot {
 		if (counter == 1 && !photoSwitchFront.get()) {
     		rollerMotor.set(0);
     		counter = 2;
+    		autoCounter = 0;
     	}
 		if (counter == 2) {
-			
+			robotDrive.mecanumDrive_Cartesian(.5, 0, lateralGyro.getAngle()*.03, 0);
+		autoCounter++;
+		}
+		if (autoCounter >=150) {
+			robotDrive.mecanumDrive_Cartesian(0, 0, 0, 0);
+			counter = 3;
 		}
     	}
     	
@@ -139,7 +147,7 @@ public class Robot extends IterativeRobot {
     	wenchEncoder.reset();
     	wenchEncoder.reset();
     	rollerSpeed = 0;
-    	wenchControl.setOutputRange(-1, .5);
+    	wenchControl.setOutputRange(-1, .6);
     	wenchEncoder.setDistancePerPulse(1);
     	wantedHeight = 0;
     }
@@ -191,11 +199,12 @@ public class Robot extends IterativeRobot {
         			lateralGyro.reset();
         	
         	} else {*/
+        	
         		if (Math.abs(driveStick.getThrottle())>=.10) {
-        			robotDrive.mecanumDrive_Cartesian(driveStick.getX()*.6, driveStick.getY()*.4, driveStick.getThrottle()*.5, 0);
+        			robotDrive.mecanumDrive_Cartesian(Math.pow(driveStick.getX(), 3)*.6, Math.pow(driveStick.getY(), 3)*.4, Math.pow(driveStick.getThrottle(), 3)*.5, 0);
         			lateralGyro.reset();
         		} else {
-        			robotDrive.mecanumDrive_Cartesian(driveStick.getX()*.6, driveStick.getY()*.4, lateralGyro.getAngle()*.03, 0);
+        			robotDrive.mecanumDrive_Cartesian(Math.pow(driveStick.getX(), 3)*.6, Math.pow(driveStick.getY(), 3)*.4, lateralGyro.getAngle()*.03, 0);
         		}
 
             if (controlStick.getRawButton(5)&&controlStick.getRawButton(9)) {
@@ -243,11 +252,20 @@ public class Robot extends IterativeRobot {
     		if (intake == false && photoSwitchEntry.get()) {
     			leftServo.set(.6);
     			rightServo.set(.6);
-    			if (wenchEncoder.get()> 0) {
-    				wenchControl.setSetpoint(0);
+    			if (wenchEncoder.get()< 0 && counter < 20) {
+    				wantedHeight = 0;
     			} else
-    			if ()
+    			if (wenchEncoder.get() > -10) {
+    				counter++;
+    			}
+    			if (counter == 20) {
+    				wantedHeight = -2489;
+   				}
     		}
+    	}
+    	
+    	if (wenchEncoder.get() < -2000) {
+    		counter = 0;
     	}
     	
     	if (!photoSwitchFront.get()) {
@@ -268,9 +286,27 @@ public class Robot extends IterativeRobot {
     	}
     	
     	wenchControl.setSetpoint(wantedHeight);
+    	
+    	/*if (!limitSwitchBot.get()) {
+    		if (wantedHeight>wenchEncoder.get()) {
+    			wenchControl.setSetpoint(0);
+    		} else {
+    			wenchControl.setSetpoint(wantedHeight);
+    		}
+    	}
+    	
+    	if (!limitSwitchTop.get()) {
+    		if (wantedHeight<wenchEncoder.get()) {
+    			wenchControl.setSetpoint(0);
+    		} else {
+    			wenchControl.setSetpoint(wantedHeight);
+    		}
+    	}*/
 
         	SmartDashboard.putBoolean("FrontSensor", photoSwitchFront.get());
         	SmartDashboard.putBoolean("EntrySensor", photoSwitchEntry.get());
+        	SmartDashboard.putBoolean("TopSwitch", limitSwitchTop.get());
+        	SmartDashboard.putBoolean("BottomSwitch", limitSwitchBot.get());
         	SmartDashboard.putNumber("POV", controlStick.getPOV());        	
         	heading = (int) lateralGyro.getAngle();
         	SmartDashboard.putNumber("Raw", lateralGyro.getAngle());
