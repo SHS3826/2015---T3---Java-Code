@@ -201,10 +201,10 @@ public class Robot extends IterativeRobot {
         	} else {*/
         	
         		if (Math.abs(driveStick.getThrottle())>=.10) {
-        			robotDrive.mecanumDrive_Cartesian(Math.pow(driveStick.getX(), 3)*.6, Math.pow(driveStick.getY(), 3)*.4, Math.pow(driveStick.getThrottle(), 3)*.5, 0);
+        			robotDrive.mecanumDrive_Cartesian(Math.pow(-driveStick.getX(), 3)*.6, Math.pow(driveStick.getY(), 3)*.4, Math.pow(driveStick.getThrottle(), 3)*.5, 0);
         			lateralGyro.reset();
         		} else {
-        			robotDrive.mecanumDrive_Cartesian(Math.pow(driveStick.getX(), 3)*.6, Math.pow(driveStick.getY(), 3)*.4, lateralGyro.getAngle()*.03, 0);
+        			robotDrive.mecanumDrive_Cartesian(Math.pow(-driveStick.getX(), 3)*.6, Math.pow(driveStick.getY(), 3)*.4, lateralGyro.getAngle()*.03, 0);
         		}
 
             if (controlStick.getRawButton(5)&&controlStick.getRawButton(9)) {
